@@ -1,5 +1,6 @@
 matplotlib
 numpy
+librosa
 pandas
 scikit-learn
 seaborn
