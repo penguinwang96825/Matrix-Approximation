@@ -21,6 +21,10 @@ Compute a faster SVD:
 1. Window-Disjoint Orthogonal (WDO)
 2. Density-based Clustering
 
+# Others
+
+Up-to-date repository can be found from [here](https://github.com/asifjalal/speaker-embedding-factorisation).
+
 # References
 
 1. http://mezbanhabibi.ir/wp-content/uploads/2020/01/NumericalLinearAlgebra-Lloyd-N1.-Trefethen-David-Bau.pdf
