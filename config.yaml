@@ -10,8 +10,8 @@ seed: 914
 # Training parameters
 n_jobs: 0
 number_of_epochs: 100
-train_batch_size: 256
-valid_batch_size: 256
+train_batch_size: 64
+valid_batch_size: 64
 lr: 0.0003
 
 
