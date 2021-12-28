@@ -9,7 +9,7 @@ class XVector(nn.Module):
     def __init__(
         self, 
         n_mfcc, 
-        dropout_p=0.0
+        dropout=0.0
     ):
         super(XVector, self).__init__()
         self.extractor1 = nn.Sequential(OrderedDict([
@@ -24,11 +24,11 @@ class XVector(nn.Module):
         self.extractor2 = nn.Sequential(OrderedDict([
             ('fc1', nn.Linear(3000, 512)), 
             ('bn1', nn.BatchNorm1d(512)), 
-            ('dropout1', nn.Dropout(p=dropout_p)), 
+            ('dropout1', nn.Dropout(p=dropout)), 
             ('relu1', nn.ReLU()), 
             ('fc2', nn.Linear(512, 512)), 
             ('bn2', nn.BatchNorm1d(512)), 
-            ('dropout2', nn.Dropout(p=dropout_p)), 
+            ('dropout2', nn.Dropout(p=dropout)), 
             ('relu2', nn.ReLU())
         ]))
 
@@ -40,14 +40,11 @@ class XVector(nn.Module):
             Shape of [batch, seq_len, mfcc].
         """
         # Residual TDNN based Frame-level Feature Extractor
-        # x: [batch, seq_len, 1500]
-        x = self.extractor1(x)
+        x = self.extractor1(x) # x: [batch, seq_len, 1500]
         # Statistics Pooling
-        # x: [batch, 3000]
-        x = self.pool(x)
+        x = self.pool(x)       # x: [batch, 3000]
         # DNN based Segment level Feature Extractor
-        # x: [batch, 512]
-        x = self.extractor2(x)
+        x = self.extractor2(x) # x: [batch, 512]
         return x
 
 
