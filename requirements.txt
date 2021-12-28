@@ -1,3 +1,4 @@
+fsspec
 matplotlib
 numpy
 librosa
@@ -6,3 +7,4 @@ scikit-learn
 seaborn
 tensorboard
 torch-tb-profiler
+ruamel.yaml
