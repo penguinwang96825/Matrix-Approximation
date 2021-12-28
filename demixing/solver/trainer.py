@@ -216,8 +216,9 @@ class Module(nn.Module):
         losses = AverageMeter()
         if self.accumulation_steps > 1:
             self.optimizer.zero_grad()
-        tk0 = tqdm(data_loader, total=len(data_loader))
+        tk0 = tqdm(data_loader, total=len(data_loader), leave=False)
         for b_idx, data in enumerate(tk0):
+            tk0.set_description(f'EPOCH {self.current_epoch}')
             self.batch_index = b_idx
             self.train_state = TrainingState.TRAIN_STEP_START
             loss, metrics = self.train_one_step(data)
@@ -240,8 +241,9 @@ class Module(nn.Module):
         self.eval()
         self.model_state = ModelState.VALID
         losses = AverageMeter()
-        tk0 = tqdm(data_loader, total=len(data_loader))
+        tk0 = tqdm(data_loader, total=len(data_loader), leave=False)
         for b_idx, data in enumerate(tk0):
+            tk0.set_description(f'EPOCH {self.current_epoch}')
             self.train_state = TrainingState.VALID_STEP_START
             with torch.no_grad():
                 loss, metrics = self.validate_one_step(data)
