@@ -5,6 +5,7 @@ from enum import Enum
 from tqdm.auto import tqdm
 from typing import List
 from abc import abstractmethod
+from demixing.callbacks import CallbackRunner
 
 
 class Module(nn.Module):
@@ -102,7 +103,8 @@ class Module(nn.Module):
                 batch_size=train_bs,
                 num_workers=n_jobs,
                 sampler=train_sampler,
-                shuffle=train_shuffle,
+                shuffle=train_shuffle, 
+                drop_last=True, 
                 collate_fn=train_collate_fn,
             )
         if self.valid_loader is None:
@@ -112,7 +114,8 @@ class Module(nn.Module):
                     batch_size=valid_bs,
                     num_workers=n_jobs,
                     sampler=valid_sampler,
-                    shuffle=valid_shuffle,
+                    shuffle=valid_shuffle, 
+                    drop_last=True, 
                     collate_fn=valid_collate_fn,
                 )
 
@@ -148,7 +151,7 @@ class Module(nn.Module):
         return
 
     @abstractmethod
-    def compile(self, loss_fn, optimizer, metrics_fn, scheduler=None):
+    def compile(self, loss_fn=None, optimizer=None, metrics_fn=None, scheduler=None):
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.scheduler = scheduler
@@ -427,59 +430,3 @@ class TrainingState(Enum):
     VALID_STEP_END = "on_valid_step_end"
     TEST_STEP_START = "on_test_step_start"
     TEST_STEP_END = "on_test_step_end"
-
-
-class Callback:
-
-    def on_epoch_start(self, model, **kwargs):
-        return
-
-    def on_epoch_end(self, model, **kwargs):
-        return
-
-    def on_train_epoch_start(self, model, **kwargs):
-        return
-
-    def on_train_epoch_end(self, model, **kwargs):
-        return
-
-    def on_valid_epoch_start(self, model, **kwargs):
-        return
-
-    def on_valid_epoch_end(self, model, **kwargs):
-        return
-
-    def on_train_step_start(self, model, **kwargs):
-        return
-
-    def on_train_step_end(self, model, **kwargs):
-        return
-
-    def on_valid_step_start(self, model, **kwargs):
-        return
-
-    def on_valid_step_end(self, model, **kwargs):
-        return
-
-    def on_test_step_start(self, model, **kwargs):
-        return
-
-    def on_test_step_end(self, model, **kwargs):
-        return
-
-    def on_train_start(self, model, **kwargs):
-        return
-
-    def on_train_end(self, model, **kwargs):
-        return
-
-
-class CallbackRunner:
-
-    def __init__(self, callbacks: List[Callback], model):
-        self.model = model
-        self.callbacks = callbacks
-
-    def __call__(self, current_state, **kwargs):
-        for cb in self.callbacks:
-            _ = getattr(cb, current_state.value)(self.model, **kwargs)
