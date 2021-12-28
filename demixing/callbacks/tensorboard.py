@@ -2,6 +2,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.tensorboard.summary import hparams
 from .callback import Callback
+from .base import BaseLogger
 
 
 class SummaryWriter(SummaryWriter):
@@ -22,19 +23,16 @@ class SummaryWriter(SummaryWriter):
                 w_hp.add_scalar(k, v)
 
 
-class TensorBoardLogger(Callback):
-    
-    def __init__(self, log_dir=".logs/"):
-        self.writer = SummaryWriter(log_dir=log_dir, flush_secs=1, filename_suffix='')
+class TensorBoardLogger(BaseLogger, Callback):
 
     def on_train_epoch_end(self, model):
         for metric in model.metrics["train"]:
-            self.writer.add_scalar(
+            self.experiment.add_scalar(
                 f"train/{metric}", model.metrics["train"][metric], model.current_epoch
             )
 
     def on_valid_epoch_end(self, model):
         for metric in model.metrics["valid"]:
-            self.writer.add_scalar(
+            self.experiment.add_scalar(
                 f"valid/{metric}", model.metrics["valid"][metric], model.current_epoch
             )
