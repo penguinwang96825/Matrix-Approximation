@@ -4,3 +4,4 @@ librosa
 pandas
 scikit-learn
 seaborn
+tensorboard
