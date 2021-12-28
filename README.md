@@ -21,6 +21,38 @@ Compute a faster SVD:
 1. Window-Disjoint Orthogonal (WDO)
 2. Density-based Clustering
 
+# Start Training 
+
+Run the command line below.
+
+```bash
+
+```
+
+(Optional) Open Tensorboard to see real-time loggings.
+
+```bash
+tensorboard --logdir .logs\ --reload_multifile True
+```
+
+## Configuration
+
+```
+#############################################################
+# Consider the audio signal to be a time series sampled at  #
+# an interval of 25ms with step size of 10ms                #
+#                                                           #
+# 25ms    25ms   25ms   25ms …  Frames                      #
+# 400     400    400    400  …  Samples/Frame               #
+#                                                           #
+# |—————|—————|—————|—————|—————|—————|—————|————-|         #
+#                                                           #
+# |—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—|—| #
+#                                                           #
+# 10 10 10 10 … Frame Step                                  #
+#############################################################
+```
+
 # Others
 
 Up-to-date repository can be found from [here](https://github.com/asifjalal/speaker-embedding-factorisation).
