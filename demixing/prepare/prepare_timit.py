@@ -33,6 +33,12 @@ class TIMIT(object):
                 to_write = f'{file_path}\t{spk}'
                 f.write(f'{to_write}\n')
 
+        speakers = sorted(set(spk_id_train+spk_id_test))
+        with open(f'{self.store_path}/speaker.map.txt', 'w') as f:
+            for idx, speaker in enumerate(speakers):
+                to_write = f'{speaker}\t{idx}'
+                f.write(f'{to_write}\n')
+
     def build_speaker_mapping(self, mode='TRAIN'):
         root_folder = os.path.join(self.timit_root_folder, mode)
         timit_data = []
@@ -78,6 +84,8 @@ class TIMIT2Mix(object):
     """
     def __init__(self, store_path):
         self.store_path = store_path
+        self.load_mapping()
+
         paths_train, speakers_train, durs_train = self.read(mode='train')
         paths_test, speakers_test, durs_test = self.read(mode='test')
         paths_train, paths_test, speakers_train, speakers_test, durs_train, durs_test = self.resplit(
@@ -90,6 +98,16 @@ class TIMIT2Mix(object):
         self.speakers_test = speakers_test
         self.durs_train = durs_train
         self.durs_test = durs_test
+
+    def load_mapping(self):
+        self.speaker2idx, self.idx2speaker = {}, {}
+        with open(f'{self.store_path}/speaker.map.txt', 'r') as f:
+            for line in f:
+                line = line.rstrip('\n')
+                speaker, idx = line.split()
+                speaker, idx = str(speaker), int(idx)
+                self.speaker2idx[speaker] = idx
+                self.idx2speaker[idx] = speaker
 
     def resplit(self, X_train, X_test, y_train, y_test, z_train, z_test):
         X = X_train + X_test
@@ -151,7 +169,7 @@ class TIMIT2Mix(object):
                 path, speaker = line.split()
                 dur = librosa.get_duration(filename=path)
                 paths.append(path)
-                speakers.append(speaker)
+                speakers.append(self.speaker2idx[speaker])
                 durs.append(dur)
         return paths, speakers, durs
 
