@@ -6,15 +6,11 @@ We propose a novel de-mixing scheme which works by singular value decomposition 
 
 ## Prepare
 
-Modify the `pythonexec` path in `demixing/prepare/prepare_timit.sh` to start the TIMIT experiment.
+Run `sh prepare/prepare_timit.sh` in order to start the TIMIT experiment.
 
 ## Start Training 
 
-Run the command line below. Please make sure to modify `pythonexec` path in `train.sh`.
-
-```bash
-sh train.sh
-```
+Run `sh train.sh` to train the demixing model.
 
 (Optional) Open Tensorboard to see real-time loggings.
 
