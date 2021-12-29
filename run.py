@@ -26,6 +26,37 @@ set_seed(CONFIG['seed'])
 
 
 def permutation_accuracy_pytorch(y_true, y_pred):
+    """
+    Examples
+    --------
+    >>> y_pred = torch.LongTensor([
+    ...     [1, 4], 
+    ...     [2, 3], 
+    ...     [2, 5], 
+    ...     [1, 3], 
+    ...     [1, 5], 
+    ...     [3, 4], 
+    ...     [3, 5], 
+    ...     [4, 5], 
+    ...     [1, 4], 
+    ...     [2, 4]
+    ... ])
+    >>> y_true = torch.LongTensor([
+    ...     [1, 3], 
+    ...     [2, 3], 
+    ...     [1, 3], 
+    ...     [3, 4], 
+    ...     [1, 2], 
+    ...     [2, 5], 
+    ...     [4, 5], 
+    ...     [4, 5], 
+    ...     [1, 2], 
+    ...     [2, 5]
+    ... ])
+    >>> acc = permutation_accuracy_pytorch(y_true, y_pred)
+    >>> print(acc)
+    ... 0.5
+    """
 
     def intersect(x, y):
         x_cat_y, counts = torch.cat([x, y]).unique(return_counts=True)
@@ -39,6 +70,37 @@ def permutation_accuracy_pytorch(y_true, y_pred):
 
 
 def permutation_accuracy_numpy(y_true, y_pred):
+    """
+    Examples
+    --------
+    >>> y_pred = np.array([
+    ...     [1, 4], 
+    ...     [2, 3], 
+    ...     [2, 5], 
+    ...     [1, 3], 
+    ...     [1, 5], 
+    ...     [3, 4], 
+    ...     [3, 5], 
+    ...     [4, 5], 
+    ...     [1, 4], 
+    ...     [2, 4]
+    ... ])
+    >>> y_true = np.array([
+    ...     [1, 3], 
+    ...     [2, 3], 
+    ...     [1, 3], 
+    ...     [3, 4], 
+    ...     [1, 2], 
+    ...     [2, 5], 
+    ...     [4, 5], 
+    ...     [4, 5], 
+    ...     [1, 2], 
+    ...     [2, 5]
+    ... ])
+    >>> acc = permutation_accuracy_pytorch(y_true, y_pred)
+    >>> print(acc)
+    ... 0.5
+    """
     total, correct = 0, 0
     for t, p in zip(y_true, y_pred):
         correct += len(np.intersect1d(t, p))
