@@ -1,13 +1,32 @@
 import os
 import re
+import sys
 import json
+import shutil
+import zipfile
 import argparse
 import librosa
+import requests
+import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import List
+from urllib.request import urlopen
 from sklearn.model_selection import train_test_split
+
+
+URL = 'https://data.deepai.org/timit.zip'
+PROJECT_ROOT = Path(os.path.abspath(os.getcwd()))
+MODULE_PATH = Path(os.path.dirname(__file__))
+TIMIT_CORPUS_ROOT = os.path.join(PROJECT_ROOT, 'data', 'corpus', 'timit')
+TEST_PATH = os.path.join(TIMIT_CORPUS_ROOT, 'TEST')
+TRAIN_PATH = os.path.join(TIMIT_CORPUS_ROOT, 'TRAIN')
+TIMIT_DATASET_ROOT = os.path.join(PROJECT_ROOT, "data", "dataset", "timit")
+
+
+logging.basicConfig(format='%(asctime)s -  %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class TIMIT(object):
@@ -15,10 +34,11 @@ class TIMIT(object):
     Step 1. Download TIMIT from https://data.deepai.org/timit.zip
     Step 2. Extract TRAIN and TEST folders to ./data/corpus/timit/
     """
-    def __init__(self, timit_root_directory, store_path):
+    def __init__(self, timit_root_directory, store_path, skip_sa=True):
         super(TIMIT).__init__()
         self.timit_root_folder = timit_root_directory
         self.store_path = store_path
+        self.skip_sa = skip_sa
 
     def build(self):
         spk_files_train, spk_id_train = self.build_speaker_mapping(mode='TRAIN')
@@ -63,6 +83,8 @@ class TIMIT(object):
             columns=["dialect_region", "file", "id", "sentence_type", "speaker_id"]
         )
         timit_data = timit_data.sort_values("speaker_id").reset_index(drop=True)
+        if self.skip_sa:
+            timit_data = timit_data.query("sentence_type!='SA'")
         return timit_data['file'].tolist(), timit_data['speaker_id'].tolist()
 
 
@@ -174,6 +196,91 @@ class TIMIT2Mix(object):
         return paths, speakers, durs
 
 
+def prepare_timit_corpus():
+
+    def download_():
+        if not (check_folders(TRAIN_PATH) and check_folders(TEST_PATH)):
+            logger.info('TIMIT corpus not exist, start downloading...')
+            try:
+                os.makedirs(TIMIT_CORPUS_ROOT)
+            except:
+                pass
+            dst_file_path = os.path.join(TIMIT_CORPUS_ROOT, 'timit.zip')
+            download_url(URL, dst_file_path)
+            dst_file_path = os.path.join(TIMIT_CORPUS_ROOT, 'timit.zip')
+            with zipfile.ZipFile(dst_file_path, 'r') as zip_ref:
+                zip_ref.extractall(TIMIT_CORPUS_ROOT)
+            TEMP_PATH = os.path.join(TIMIT_CORPUS_ROOT, 'data')
+            shutil.move(
+                os.path.join(TEMP_PATH, 'TRAIN'),
+                TIMIT_CORPUS_ROOT
+            )
+            shutil.move(
+                os.path.join(TEMP_PATH, 'TEST'),
+                TIMIT_CORPUS_ROOT
+            )
+            os.remove(dst_file_path)
+            try:
+                shutil.rmtree(TEMP_PATH)
+            except OSError as e:
+                logger.info("Error: %s : %s" % (TEMP_PATH, e.strerror))
+        else:
+            logger.info('TIMIT corpus already exist!')
+
+    download_()
+
+
+def check_folders(*folders):
+    """Returns False if any passed folder does not exist."""
+    for folder in folders:
+        if not os.path.exists(folder):
+            return False
+    return True
+
+
+def _progress_bar(count, total):
+    """Report download progress.
+    Credit:
+    https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113
+    """
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stdout.write(
+        '  [{}] {}% of {:.1f}MB file  \r'.
+        format(bar, percents, total / 1024 / 1024)
+    )
+    sys.stdout.flush()
+    if count >= total:
+        sys.stdout.write('\n')
+
+
+def download_url(url, dst_file_path, chunk_size=8192, progress_hook=_progress_bar):
+    """Download url and write it to dst_file_path.
+    Credit:
+    https://stackoverflow.com/questions/2028517/python-urllib2-progress-hook
+    """
+    response = urlopen(url)
+    total_size = requests.head(url).headers['content-length'].strip()
+    total_size = int(total_size)
+    bytes_so_far = 0
+
+    with open(dst_file_path, 'wb') as f:
+        while 1:
+            chunk = response.read(chunk_size)
+            bytes_so_far += len(chunk)
+            if not chunk:
+                break
+            if progress_hook:
+                progress_hook(bytes_so_far, total_size)
+            f.write(chunk)
+
+    return bytes_so_far
+
+
 def main():
     args = argparse.ArgumentParser(
         description="Preparing TIMIT dataset for training."
@@ -187,14 +294,15 @@ def main():
     )
     args = args.parse_args()
 
-    PROJECT_ROOT = Path(os.path.abspath(os.getcwd()))
-    MODULE_PATH = Path(os.path.dirname(__file__))
-    TIMIT_CORPUS_ROOT = os.path.join(PROJECT_ROOT, "data", "corpus", "timit")
-    TIMIT_DATASET_ROOT = os.path.join(PROJECT_ROOT, "data", "dataset", "timit")
+    prepare_timit_corpus()
 
-    timit = TIMIT(TIMIT_CORPUS_ROOT, TIMIT_DATASET_ROOT)
+    # Build TIMIT dataset (for speaker ID task purpose)
+    logger.info('Build TIMIT dataset (for speaker ID task purpose)')
+    timit = TIMIT(TIMIT_CORPUS_ROOT, TIMIT_DATASET_ROOT, skip_sa=True)
     timit.build()
 
+    # Build TIMIT mixture dataset (for speaker demixing task purpose)
+    logger.info('Build TIMIT mixture dataset (for speaker demixing task purpose)')
     timit_2mix = TIMIT2Mix(TIMIT_DATASET_ROOT)
     timit_2mix.mix(num_mix=args.num_mix)
 
