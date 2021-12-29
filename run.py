@@ -2,9 +2,6 @@ import os
 import torch
 import torch.nn as nn
 from pathlib import Path
-from transformers import AdamW
-from transformers import get_linear_schedule_with_warmup
-from sklearn import metrics
 from collections import OrderedDict
 from demixing import set_seed
 from demixing.datasets import SpeechDataset
@@ -12,6 +9,7 @@ from demixing.solver import Module
 from demixing.nnets import XVector
 from demixing.nnets import SVD
 from demixing.nnets import ResidualMLP
+from demixing.nnets.loss import PermutationCrossEntropy
 from demixing.callbacks import TensorBoardLogger
 from demixing import load_hyperpyyaml
 
@@ -24,13 +22,6 @@ PROJECT_ROOT = Path(os.path.abspath(os.getcwd()))
 TIMIT_CORPUS_ROOT = os.path.join(PROJECT_ROOT, "data", "corpus", "timit")
 TIMIT_DATASET_ROOT = os.path.join(PROJECT_ROOT, "data", "dataset", "timit")
 set_seed(CONFIG['seed'])
-
-
-def pit_cross_entropy(output_1, output_2, target_1, target_2):
-    loss_fn = nn.CrossEntropyLoss()
-    loss_1 = loss_fn(output_1, target_1) + loss_fn(output_2, target_2)
-    loss_2 = loss_fn(output_1, target_2) + loss_fn(output_2, target_1)
-    return min([loss_1, loss_2])
 
 
 class DecompositionNet(Module):
@@ -85,19 +76,15 @@ class DecompositionNet(Module):
         # u_2: [batch, emb_dim]
         u_2 = self.ff_u2(u_2) + u_2
         # output_1: [batch, num_classes]
-        output_1 = self.classifier(u_1)
+        pred_1 = self.classifier(u_1)
         # output_2: [batch, num_classes]
-        output_2 = self.classifier(u_2)
-
-        loss = self.loss(output_1, output_2, speaker_1, speaker_2)
+        pred_2 = self.classifier(u_2)
+        # output: [batch, num_to_demix, num_classes]
+        preds = torch.stack((pred_1, pred_2), dim=1)
+        # tagets: [batch, num_to_demix]
+        targets = torch.stack((speaker_1, speaker_2))
+        loss = self.loss_fn(preds, targets)
         return None, loss, {}
-
-    def loss(self, output_1, output_2, target_1, target_2):
-        if target_1 is None:
-            return None
-        if target_2 is None:
-            return None
-        return self.loss_fn(output_1, output_2, target_1, target_2)
 
 
 def main():
@@ -107,7 +94,6 @@ def main():
     train_ds = train_ds.dataset
     valid_ds = valid_ds.dataset
 
-    # os.system('rm .logs/*')
     tb = TensorBoardLogger(log_dir=".logs", name='svd')
     model = DecompositionNet(
         n_mfcc=CONFIG['n_mfcc'], 
@@ -116,20 +102,23 @@ def main():
         max_speakers=10, 
         num_classes=630
     )
-    optimiser = CONFIG['opt_class'](model.parameters())
+    loss_fn = PermutationCrossEntropy(num_perm=2).to(CONFIG['device'])
     total_step = len(train_ds) / CONFIG['train_batch_size'] * CONFIG['number_of_epochs']
+    optimiser = CONFIG['opt_class'](model.parameters())
+    scheduler = CONFIG['sch_class'](optimiser)
+    
     model.compile(
-        loss_fn=pit_cross_entropy, 
+        loss_fn=loss_fn, 
         optimizer=optimiser, 
         metrics_fn=[], 
-        scheduler=get_linear_schedule_with_warmup(optimiser, num_warmup_steps=10, num_training_steps=total_step)
+        scheduler=scheduler
     )
     model.fit(
         train_dataset=train_ds, 
         valid_dataset=valid_ds, 
         train_bs=CONFIG['train_batch_size'], 
         valid_bs=CONFIG['valid_batch_size'], 
-        device="cuda", 
+        device=CONFIG['device'], 
         epochs=CONFIG['number_of_epochs'], 
         n_jobs=CONFIG['n_jobs'], 
         fp16=False, 
