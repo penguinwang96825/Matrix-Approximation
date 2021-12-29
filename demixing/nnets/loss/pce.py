@@ -11,6 +11,14 @@ class PermutationCrossEntropy(nn.Module):
         self.num_perm = num_perm
 
     def forward(self, preds, targets):
+        """
+        Parameters
+        ----------
+        preds: torch.tensor
+            Size of [batch_size, num_speaker_to_demix, num_classes]
+        targets: torch.tensor
+            Size of [batch_size, num_speaker_to_demix]
+        """
         comb = permutations(range(self.num_perm), self.num_perm)
         comb = list(comb)
 
