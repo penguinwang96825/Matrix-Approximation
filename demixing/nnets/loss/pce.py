@@ -6,9 +6,10 @@ from itertools import permutations
 
 class PermutationCrossEntropy(nn.Module):
 
-    def __init__(self, num_perm):
+    def __init__(self, num_perm, device='cuda'):
         super(PermutationCrossEntropy, self).__init__()
         self.num_perm = num_perm
+        self.device = device
 
     def get_combinations(self):
         comb = permutations(range(self.num_perm), self.num_perm)
@@ -53,10 +54,11 @@ class PermutationCrossEntropy(nn.Module):
         # Iterate through every sample in one batch
         comb = self.get_combinations()
         loss_batch = []
+        targets, preds = targets.to(self.device), preds.to(self.device)
         for gt, pb in zip(targets, preds):
             losses = []
             for c in gt[..., comb]:
-                loss = torch.tensor([0.0])
+                loss = torch.tensor([0.0], device=self.device)
                 for i, c_ in enumerate(c):
                     loss += F.cross_entropy(pb[i].unsqueeze(0), c_.unsqueeze(0))
                 losses.append(loss)
