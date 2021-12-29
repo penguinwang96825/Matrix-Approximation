@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.nn as nn
+import numpy as np
 from pathlib import Path
 from collections import OrderedDict
 from demixing import set_seed
@@ -22,6 +23,27 @@ PROJECT_ROOT = Path(os.path.abspath(os.getcwd()))
 TIMIT_CORPUS_ROOT = os.path.join(PROJECT_ROOT, "data", "corpus", "timit")
 TIMIT_DATASET_ROOT = os.path.join(PROJECT_ROOT, "data", "dataset", "timit")
 set_seed(CONFIG['seed'])
+
+
+def permutation_accuracy_pytorch(y_true, y_pred):
+
+    def intersect(x, y):
+        x_cat_y, counts = torch.cat([x, y]).unique(return_counts=True)
+        return x_cat_y[torch.where(counts.gt(1))]
+
+    total, correct = 0, 0
+    for t, p in zip(y_true, y_pred):
+        correct += len(intersect(t, p))
+        total += 1
+    return correct / (2*total)
+
+
+def permutation_accuracy_numpy(y_true, y_pred):
+    total, correct = 0, 0
+    for t, p in zip(y_true, y_pred):
+        correct += len(np.intersect1d(t, p))
+        total += 1
+    return correct / (2*total)
 
 
 class DecompositionNet(Module):
@@ -77,14 +99,18 @@ class DecompositionNet(Module):
         u_2 = self.ff_u2(u_2) + u_2
         # output_1: [batch, num_classes]
         pred_1 = self.classifier(u_1)
+        class_1 = torch.argmax(pred_1, dim=1)
         # output_2: [batch, num_classes]
         pred_2 = self.classifier(u_2)
+        class_2 = torch.argmax(pred_2, dim=1)
         # output: [batch, num_to_demix, num_classes]
         preds = torch.stack((pred_1, pred_2), dim=1)
         # tagets: [batch, num_to_demix]
         targets = torch.stack((speaker_1, speaker_2))
+        predictions = torch.stack((class_1, class_2), dim=1)
         loss = self.loss_fn(preds, targets)
-        return None, loss, {}
+        m = {fn.__name__:fn(predictions.to('cpu'), targets.to('cpu')) for fn in self.metrics_fn}
+        return None, loss, m
 
 
 def main():
@@ -110,7 +136,7 @@ def main():
     model.compile(
         loss_fn=loss_fn, 
         optimizer=optimiser, 
-        metrics_fn=[], 
+        metrics_fn=[permutation_accuracy_numpy], 
         scheduler=scheduler
     )
     model.fit(
