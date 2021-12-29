@@ -18,7 +18,6 @@ from sklearn.model_selection import train_test_split
 
 URL = 'https://data.deepai.org/timit.zip'
 PROJECT_ROOT = Path(os.path.abspath(os.getcwd()))
-MODULE_PATH = Path(os.path.dirname(__file__))
 TIMIT_CORPUS_ROOT = os.path.join(PROJECT_ROOT, 'data', 'corpus', 'timit')
 TEST_PATH = os.path.join(TIMIT_CORPUS_ROOT, 'TEST')
 TRAIN_PATH = os.path.join(TIMIT_CORPUS_ROOT, 'TRAIN')
