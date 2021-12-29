@@ -2,6 +2,7 @@ import os
 import sys
 import torch
 import random
+import requests
 import numpy as np
 from urllib.request import urlopen
 
@@ -57,7 +58,7 @@ def download_url(url, dst_file_path, chunk_size=8192, progress_hook=_progress_ba
     https://stackoverflow.com/questions/2028517/python-urllib2-progress-hook
     """
     response = urlopen(url)
-    total_size = response.info().getheader('Content-Length').strip()
+    total_size = requests.head(url).headers['content-length'].strip()
     total_size = int(total_size)
     bytes_so_far = 0
 
