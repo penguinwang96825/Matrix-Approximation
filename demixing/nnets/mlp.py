@@ -16,11 +16,11 @@ class MLP(nn.Module):
 
         model = nn.Sequential()
         model.add_module(
-            'initiallin',
+            'initial-lin',
             nn.Linear(input_dim, layers[0])
         )
         model.add_module(
-            'initialrelu',
+            'initial-relu',
             nn.ReLU()
         )
 
@@ -35,7 +35,7 @@ class MLP(nn.Module):
             )
 
         model.add_module(
-            'finallin',
+            'final-lin',
             nn.Linear(layers[-1], output_dim)
         )
 
@@ -62,26 +62,26 @@ class ResidualMLP(nn.Module):
 
         model = nn.Sequential()
         model.add_module(
-            'initial-layer.lin',
+            'initial-layer-lin',
             nn.Linear(input_dim, layers[0])
         )
         model.add_module(
-            'initial-layer.relu',
+            'initial-layer-relu',
             nn.ReLU()
         )
 
         for i in range(len(layers)-1):
             model.add_module(
-                'layer-{}.lin'.format(i+1),
+                'layer-{}-lin'.format(i+1),
                 nn.Linear(layers[i], layers[i+1])
             )
             model.add_module(
-                'layer-{}.relu'.format(i+1),
+                'layer-{}-relu'.format(i+1),
                 nn.ReLU()
             )
 
         model.add_module(
-            'last-layer.lin',
+            'last-layer-lin',
             nn.Linear(layers[-1], output_dim)
         )
 
