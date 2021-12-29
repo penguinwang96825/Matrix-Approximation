@@ -8,11 +8,12 @@ seed: 914
 
 
 # Training parameters
+device: "cuda"
 n_jobs: 0
 number_of_epochs: 100
-train_batch_size: 64
-valid_batch_size: 64
-lr: 0.0003
+train_batch_size: 128
+valid_batch_size: 128
+lr: 0.003
 
 
 # Model parameters
@@ -44,3 +45,9 @@ enc: !new:demixing.nnets.xvector.XVector
 
 opt_class: !name:transformers.AdamW
     lr: !ref <lr>
+
+
+sch_class: !name:demixing.nnets.scheduler.noam.NoamOpt
+    model_size: !ref <emb_size>
+    factor: 1
+    warmup: 50
