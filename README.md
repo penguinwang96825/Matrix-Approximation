@@ -1,6 +1,6 @@
 # Matrix Factorisation Project
 
-We propose a novel de-mixing scheme which works by singular value decomposition (SVD) decorrelating in embedding domain. With the help of SVD properties, this approach is better than performing de-mixing functions to extract the target speakers' embeddings. Compared to de-mixing functions, the presented approach doesn't require pre-computed speaker inventory containing profile vector (d-vector) of the speaker. Instead of utilising SVD for the purposes of signal reconstruction or data compression, the proposed approach explains statistical variation among attributes for building an orthonormal embedding space. This interpretation is what makes it useful in the context of signal processing.
+We propose a novel de-mixing scheme which works by singular value decomposition (SVD) decorrelating in embedding domain. With the help of SVD properties, this approach is better than performing de-mixing functions to extract the target speakers' embeddings. Compared to de-mixing functions, the presented approach doesn't require pre-computed speaker inventory containing profile vector (d-vector) of the speaker. Instead of utilising SVD for the purposes of signal reconstruction or data compression, the proposed approach explains statistical variation among attributes for building an orthonormal embedding space. This interpretation is what makes it useful in the context of signal processing. Up-to-date repository can be found from [here](https://github.com/asifjalal/speaker-embedding-factorisation).
 
 # Quick Experiment
 
@@ -20,7 +20,9 @@ tensorboard --logdir .logs\ --reload_multifile True
 
 # TODO
 
-Up-to-date repository can be found from [here](https://github.com/asifjalal/speaker-embedding-factorisation).
+- [✓] Create a new overlead template to write the paper.
+- [✓] Implement metrics and losses (objective functions).
+- [ ] Write a run script to pre-train backbone models.
 
 # References
 
