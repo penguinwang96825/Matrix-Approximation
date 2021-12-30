@@ -66,7 +66,7 @@ def permutation_accuracy_pytorch(y_true, y_pred):
     for t, p in zip(y_true, y_pred):
         correct += len(intersect(t, p))
         total += 1
-    return correct / (2*total)
+    return correct / (y_true.shape[1]*total)
 
 
 def permutation_accuracy_numpy(y_true, y_pred):
@@ -105,7 +105,7 @@ def permutation_accuracy_numpy(y_true, y_pred):
     for t, p in zip(y_true, y_pred):
         correct += len(np.intersect1d(t, p))
         total += 1
-    return correct / (2*total)
+    return correct / (y_true.shape[1]*total)
 
 
 def permutation_top_k_accuracy(y_true, y_score, k=2):
@@ -153,7 +153,7 @@ def permutation_top_k_accuracy(y_true, y_score, k=2):
         topk = np.unique(topk.flatten())
         correct += len(np.intersect1d(t, topk))
         total += 1
-    return correct / (2*total)
+    return correct / (y_true.shape[1]*total)
 
 
 p_acc = lambda t, p: permutation_accuracy_numpy(t, p)
@@ -232,8 +232,6 @@ class DecompositionNet(Module):
         probs = probs.cpu().detach().numpy()
         preds = preds.cpu().detach().numpy()
         targets = targets.cpu().detach().numpy()
-        p_acc(targets, preds)
-        p_top5_acc(targets, probs)
         return {"p_acc": p_acc(targets, preds), 'p_top5_acc': p_top5_acc(targets, probs)}
 
 
@@ -241,8 +239,6 @@ def main():
     TRAIN_JSONL_PATH = os.path.join(TIMIT_DATASET_ROOT, 'train-clean-2mix.jsonl')
     ds = SpeechDataset(TRAIN_JSONL_PATH, mfcc_transform=True)
     train_ds, valid_ds = torch.utils.data.random_split(ds, [round(len(ds)*.8), round(len(ds)*.2)])
-    train_ds = train_ds.dataset
-    valid_ds = valid_ds.dataset
 
     tb = TensorBoardLogger(log_dir=".logs", name='svd')
     model = DecompositionNet(
@@ -256,9 +252,6 @@ def main():
     total_step = len(train_ds) / CONFIG['train_batch_size'] * CONFIG['number_of_epochs']
     optimiser = CONFIG['opt_class'](model.parameters())
     scheduler = CONFIG['sch_class'](optimiser)
-    
-    p_acc = lambda t, p: permutation_accuracy_numpy(t, p)
-    p_top5_acc = lambda t, s: permutation_top_k_accuracy(k=5)
 
     model.compile(
         loss_fn=loss_fn, 
