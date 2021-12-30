@@ -27,11 +27,16 @@ tensorboard --logdir .logs\ --reload_multifile True
 
 # References
 
-1. http://mezbanhabibi.ir/wp-content/uploads/2020/01/NumericalLinearAlgebra-Lloyd-N1.-Trefethen-David-Bau.pdf
-2. http://www.stat.uchicago.edu/~lekheng/courses/302/classics/golub-kahan.pdf
-3. https://arxiv.org/pdf/1512.00809.pdf
-4. https://arxiv.org/pdf/2006.10930.pdf
-5. https://arxiv.org/pdf/2010.15366v3.pdf
-6. https://arxiv.org/pdf/2104.02109.pdf
-7. https://github.com/NaoyukiKanda/LibriSpeechMix
-8. https://www.cs.cmu.edu/~venkatg/teaching/CStheory-infoage/book-chapter-4.pdf
+| Conference | Title | Link |
+| :---: | :---: | :---: |
+| | Numerical Linear Algebra | [link](http://mezbanhabibi.ir/wp-content/uploads/2020/01/NumericalLinearAlgebra-Lloyd-N1.-Trefethen-David-Bau.pdf) |
+| | Calculating the Singular Values and Pseudo-Inverse of a Matrix | [link](http://www.stat.uchicago.edu/~lekheng/courses/302/classics/golub-kahan.pdf) |
+| | Optimal Whitening and Decorrelation | [link](https://arxiv.org/pdf/1512.00809.pdf) |
+| INTERSPEECH-20 | Joint Speaker Counting, Speech Recognition, and Speaker Identification for Overlapped Speech of Any Number of Speakers | [link](https://www.isca-speech.org/archive_v0/Interspeech_2020/pdfs/1085.pdf) |
+| INTERSPEECH-21 | Stabilizing Label Assignment for Speech Separation by Self-supervised Pre-training | [link](https://www.isca-speech.org/archive/pdfs/interspeech_2021/huang21h_interspeech.pdf) |
+| INTERSPEECH-21 | Streaming Multi-talker Speech Recognition with Joint Speaker Identification | [link](https://www.isca-speech.org/archive/pdfs/interspeech_2021/lu21_interspeech.pdf)
+
+## Extra References
+
+1. https://www.cs.cmu.edu/~venkatg/teaching/CStheory-infoage/book-chapter-4.pdf
+2. https://github.com/NaoyukiKanda/LibriSpeechMix
