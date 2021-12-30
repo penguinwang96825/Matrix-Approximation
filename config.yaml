@@ -13,7 +13,7 @@ n_jobs: 0
 number_of_epochs: 100
 train_batch_size: 128
 valid_batch_size: 128
-lr: 0.003
+lr: 0.0003
 
 
 # Model parameters
@@ -29,6 +29,7 @@ n_mels: 80
 n_mfcc: 20
 
 
+# Not supported yet
 compute_features: !new:demixing.feats.transforms.MFCC
     sample_rate: !ref <sample_rate>
     n_mfcc: !ref <n_mfcc>
@@ -38,6 +39,7 @@ compute_features: !new:demixing.feats.transforms.MFCC
         hop_length: !ref <hop_length>
 
 
+# So far only XVector is supported
 enc: !new:demixing.nnets.xvector.XVector
     n_mfcc: !ref <n_mfcc>
     dropout: !ref <dropout>
