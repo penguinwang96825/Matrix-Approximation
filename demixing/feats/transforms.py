@@ -339,7 +339,6 @@ class Spectrogram(torch.nn.Module):
         )
 
 
-
 class AmplitudeToDB(nn.Module):
     
     __constants__ = ['multiplier', 'amin', 'ref_value', 'db_multiplier']
@@ -369,3 +368,141 @@ class AmplitudeToDB(nn.Module):
         """
         output = F.amplitude_to_DB(x, self.multiplier, self.amin, self.db_multiplier, self.top_db)
         return output
+
+
+class Deltas(torch.nn.Module):
+    """Computes delta coefficients (time derivatives).
+
+    Arguments
+    ---------
+    win_length : int
+        Length of the window used to compute the time derivatives.
+
+    Example
+    -------
+    >>> inputs = torch.randn([10, 101, 20])
+    >>> compute_deltas = Deltas(input_size=inputs.size(-1))
+    >>> features = compute_deltas(inputs)
+    >>> features.shape
+    torch.Size([10, 101, 20])
+    """
+
+    def __init__(
+        self, input_size, window_length=5,
+    ):
+        super().__init__()
+        self.n = (window_length - 1) // 2
+        self.denom = self.n * (self.n + 1) * (2 * self.n + 1) / 3
+
+        self.register_buffer(
+            "kernel",
+            torch.arange(-self.n, self.n + 1, dtype=torch.float32,).repeat(
+                input_size, 1, 1
+            ),
+        )
+
+    def forward(self, x):
+        """Returns the delta coefficients.
+
+        Arguments
+        ---------
+        x : tensor
+            A batch of tensors.
+        """
+        # Managing multi-channel deltas reshape tensor (batch*channel,time)
+        x = x.transpose(1, 2).transpose(2, -1)
+        or_shape = x.shape
+        if len(or_shape) == 4:
+            x = x.reshape(or_shape[0] * or_shape[2], or_shape[1], or_shape[3])
+
+        # Padding for time borders
+        x = torch.nn.functional.pad(x, (self.n, self.n), mode="replicate")
+
+        # Derivative estimation (with a fixed convolutional kernel)
+        delta_coeff = (
+            torch.nn.functional.conv1d(x, self.kernel, groups=x.shape[1])
+            / self.denom
+        )
+
+        # Retrieving the original dimensionality (for multi-channel case)
+        if len(or_shape) == 4:
+            delta_coeff = delta_coeff.reshape(
+                or_shape[0], or_shape[1], or_shape[2], or_shape[3],
+            )
+        delta_coeff = delta_coeff.transpose(1, -1).transpose(2, -1)
+
+        return delta_coeff
+
+
+class DCT(torch.nn.Module):
+    """Computes the discrete cosine transform.
+
+    This class is primarily used to compute MFCC features of an audio signal
+    given a set of FBANK features as input.
+
+    Arguments
+    ---------
+    input_size : int
+        Expected size of the last dimension in the input.
+    n_out : int
+        Number of output coefficients.
+    ortho_norm : bool
+        Whether to use orthogonal norm.
+
+    Example
+    -------
+    >>> import torch
+    >>> inputs = torch.randn([10, 101, 40])
+    >>> compute_mfccs = DCT(input_size=inputs.size(-1))
+    >>> features = compute_mfccs(inputs)
+    >>> features.shape
+    torch.Size([10, 101, 20])
+    """
+
+    def __init__(
+        self, input_size, n_out=20, ortho_norm=True,
+    ):
+        super().__init__()
+
+        if n_out > input_size:
+            raise ValueError(
+                "Cannot select more DCT coefficients than inputs "
+                "(n_out=%i, n_in=%i)" % (n_out, input_size)
+            )
+
+        # Generate matix for DCT transformation
+        n = torch.arange(float(input_size))
+        k = torch.arange(float(n_out)).unsqueeze(1)
+        dct = torch.cos(math.pi / float(input_size) * (n + 0.5) * k)
+
+        if ortho_norm:
+            dct[0] *= 1.0 / math.sqrt(2.0)
+            dct *= math.sqrt(2.0 / float(input_size))
+        else:
+            dct *= 2.0
+
+        self.dct_mat = dct.t()
+
+    def forward(self, x):
+        """Returns the DCT of the input tensor.
+
+        Arguments
+        ---------
+        x : tensor
+            A batch of tensors to transform, usually fbank features.
+        """
+        # Managing multi-channels case
+        input_shape = x.shape
+        if len(input_shape) == 4:
+            x = x.reshape(x.shape[0] * x.shape[3], x.shape[1], x.shape[2])
+
+        # apply the DCT transform
+        dct = torch.matmul(x, self.dct_mat.to(x.device))
+
+        # Reshape in the case of multi-channels
+        if len(input_shape) == 4:
+            dct = dct.reshape(
+                input_shape[0], dct.shape[1], dct.shape[2], input_shape[3]
+            )
+
+        return dct
