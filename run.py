@@ -149,7 +149,8 @@ def permutation_top_k_accuracy(y_true, y_score, k=2):
     """
     total, correct = 0, 0
     for t, s in zip(y_true, y_score):
-        topk = np.array([j.argsort()[-k:][::-1] for j in s]).flatten()
+        topk = np.array([j.argsort()[-k:][::-1] for j in s])
+        topk = np.unique(topk.flatten())
         correct += len(np.intersect1d(t, topk))
         total += 1
     return correct / (2*total)
