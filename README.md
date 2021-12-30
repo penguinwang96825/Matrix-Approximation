@@ -20,9 +20,10 @@ tensorboard --logdir .logs\ --reload_multifile True
 
 # TODO
 
-- [✓] Create a new overlead template to write the paper.
-- [✓] Implement metrics and losses (objective functions).
+- [x] Create a new overlead template to write the paper.
+- [x] Implement metrics and losses (objective functions).
 - [ ] Write a run script to pre-train backbone models.
+- [ ] Come up with explanation and interpretation of identity embedding (TBD).
 
 # References
 
