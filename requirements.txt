@@ -7,4 +7,5 @@ scikit-learn
 seaborn
 tensorboard
 torch-tb-profiler
+transformers
 ruamel.yaml
