@@ -108,6 +108,57 @@ def permutation_accuracy_numpy(y_true, y_pred):
     return correct / (2*total)
 
 
+def permutation_top_k_accuracy(y_true, y_score, k=2):
+    """
+    Parameters
+    ----------
+    y_true: np.ndarray
+        Size of [batch, num_to_demix]
+    y_score: np.ndarray
+        Size of [batch, num_to_demix, num_classes]
+
+    Examples
+    --------
+    >>> y_true = np.array([
+    ...     [1, 4], 
+    ...     [2, 3], 
+    ...     [2, 5], 
+    ...     [1, 3]
+    ... ])
+    >>> y_score = np.array([
+    ...     [
+    ...         [0.1, 0.2, 0.3, 0.4, 0.5], # 0 is in top 2
+    ...         [0.4, 0.5, 0.1, 0.6, 0.1]
+    ...     ], 
+    ...     [
+    ...         [0.7, 0.6, 0.5, 0.4, 0.3], 
+    ...         [0.1, 0.3, 0.5, 0.7, 0.9]
+    ...     ], 
+    ...     [
+    ...         [0.5, 0.7, 0.9, 0.1, 0.3], 
+    ...         [0.4, 0.5, 0.6, 0.7, 0.4]
+    ...     ], 
+    ...     [
+    ...         [0.8, 0.1, 0.2, 0.4, 0.5], 
+    ...         [0.4, 0.9, 0.5, 0.4, 0.1]
+    ...     ]
+    ... ])
+    >>> acc = permutation_top_k_accuracy(y_true, y_score, k=2)
+    >>> print(acc)
+    ... 0.625
+    """
+    total, correct = 0, 0
+    for t, s in zip(y_true, y_score):
+        topk = np.array([j.argsort()[-k:][::-1] for j in s]).flatten()
+        correct += len(np.intersect1d(t, topk))
+        total += 1
+    return correct / (2*total)
+
+
+p_acc = lambda t, p: permutation_accuracy_numpy(t, p)
+p_top5_acc = lambda t, s: permutation_top_k_accuracy(t, s, k=5)
+
+
 class DecompositionNet(Module):
 
     def __init__(self, n_mfcc, emb_dim, dropout, max_speakers, num_classes):
@@ -160,19 +211,29 @@ class DecompositionNet(Module):
         # u_2: [batch, emb_dim]
         u_2 = self.ff_u2(u_2) + u_2
         # output_1: [batch, num_classes]
-        pred_1 = self.classifier(u_1)
-        class_1 = torch.argmax(pred_1, dim=1)
+        prob_1 = self.classifier(u_1)
+        pred_1 = torch.argmax(prob_1, dim=1)
         # output_2: [batch, num_classes]
-        pred_2 = self.classifier(u_2)
-        class_2 = torch.argmax(pred_2, dim=1)
+        prob_2 = self.classifier(u_2)
+        pred_2 = torch.argmax(prob_2, dim=1)
         # output: [batch, num_to_demix, num_classes]
-        preds = torch.stack((pred_1, pred_2), dim=1)
-        # tagets: [batch, num_to_demix]
+        probs = torch.stack((prob_1, prob_2), dim=1)
+        # targets: [batch, num_to_demix]
         targets = torch.stack((speaker_1, speaker_2))
-        predictions = torch.stack((class_1, class_2), dim=1)
-        loss = self.loss_fn(preds, targets)
-        m = {fn.__name__:fn(predictions.to('cpu'), targets.to('cpu')) for fn in self.metrics_fn}
+        preds = torch.stack((pred_1, pred_2), dim=1)
+        loss = self.loss_fn(probs, targets)
+        m = self.monitor_metrics(probs, preds, targets)
         return None, loss, m
+
+    def monitor_metrics(self, probs, preds, targets):
+        if targets is None:
+            return {}
+        probs = probs.cpu().detach().numpy()
+        preds = preds.cpu().detach().numpy()
+        targets = targets.cpu().detach().numpy()
+        p_acc(targets, preds)
+        p_top5_acc(targets, probs)
+        return {"p_acc": p_acc(targets, preds), 'p_top5_acc': p_top5_acc(targets, probs)}
 
 
 def main():
@@ -195,10 +256,13 @@ def main():
     optimiser = CONFIG['opt_class'](model.parameters())
     scheduler = CONFIG['sch_class'](optimiser)
     
+    p_acc = lambda t, p: permutation_accuracy_numpy(t, p)
+    p_top5_acc = lambda t, s: permutation_top_k_accuracy(k=5)
+
     model.compile(
         loss_fn=loss_fn, 
         optimizer=optimiser, 
-        metrics_fn=[permutation_accuracy_numpy], 
+        metrics_fn=[], 
         scheduler=scheduler
     )
     model.fit(
