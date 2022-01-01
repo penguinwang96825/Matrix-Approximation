@@ -22,6 +22,7 @@ with open("./config.yaml") as f:
 
 
 PROJECT_ROOT = Path(os.path.abspath(os.getcwd()))
+CHECKPOINTS_ROOT = os.path.join(PROJECT_ROOT, "checkpoints")
 TIMIT_CORPUS_ROOT = os.path.join(PROJECT_ROOT, "data", "corpus", "timit")
 TIMIT_DATASET_ROOT = os.path.join(PROJECT_ROOT, "data", "dataset", "timit")
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -166,6 +167,7 @@ def main():
         fp16=False, 
         callbacks=[tb]
     )
+    model.save(os.path.join(CHECKPOINTS_ROOT, f'svd-aug5-bs128.ckpt'), weights_only=False)
 
 
 if __name__ == '__main__':
