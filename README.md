@@ -22,6 +22,7 @@ tensorboard --logdir .logs\ --reload_multifile True
 
 - [x] Create a new overleaf template to write the paper (here is the [link](https://www.overleaf.com/9817742265pvzhfnzxzhcq)).
 - [x] Implement metrics and losses (objective functions).
+- [ ] Prepare MiniLibriSpeech corpus and dataset.
 - [ ] Write a run script to pre-train backbone models.
 - [ ] Come up with explanation and interpretation of identity embedding (TBD).
 
@@ -35,6 +36,7 @@ tensorboard --logdir .logs\ --reload_multifile True
 | INTERSPEECH-20 | Joint Speaker Counting, Speech Recognition, and Speaker Identification for Overlapped Speech of Any Number of Speakers | [link](https://www.isca-speech.org/archive_v0/Interspeech_2020/pdfs/1085.pdf) |
 | INTERSPEECH-21 | Stabilizing Label Assignment for Speech Separation by Self-supervised Pre-training | [link](https://www.isca-speech.org/archive/pdfs/interspeech_2021/huang21h_interspeech.pdf) |
 | INTERSPEECH-21 | Streaming Multi-talker Speech Recognition with Joint Speaker Identification | [link](https://www.isca-speech.org/archive/pdfs/interspeech_2021/lu21_interspeech.pdf)
+| IEEE | Orthogonal Deep Neural Networks | [link](https://arxiv.org/pdf/1905.05929.pdf) |
 
 ## Extra References
 
