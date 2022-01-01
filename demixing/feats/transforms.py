@@ -10,14 +10,14 @@ class MFCC(nn.Module):
     __constants__ = ['sample_rate', 'n_mfcc', 'dct_type', 'top_db', 'log_mels']
 
     def __init__(
-            self,
-            sample_rate: int = 16000,
-            n_mfcc: int = 40,
-            dct_type: int = 2,
-            norm: str = 'ortho',
-            log_mels: bool = False,
-            melkwargs: Optional[dict] = None
-        ):
+        self,
+        sample_rate: int = 16000,
+        n_mfcc: int = 40,
+        dct_type: int = 2,
+        norm: str = 'ortho',
+        log_mels: bool = False,
+        melkwargs: Optional[dict] = None
+    ):
         super(MFCC, self).__init__()
         supported_dct_types = [2]
         if dct_type not in supported_dct_types:
