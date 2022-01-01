@@ -12,10 +12,11 @@ from demixing.operation import Padder2d
 
 class SpeechDataset(torch.utils.data.Dataset):
 
-    def __init__(self, jsonl_path, sr=16000, n_mfcc=20, snr=5, slice_dur=1, mfcc_transform=True):
+    def __init__(self, jsonl_path, sr=16000, n_mfcc=20, snr=5, slice_dur=1, augmentation=0, mfcc_transform=True):
         self.sr = sr
         self.snr = snr
         self.slice_dur = slice_dur
+        self.augmentation = augmentation
         self.mfcc_transform = mfcc_transform
 
         if mfcc_transform:
@@ -33,7 +34,7 @@ class SpeechDataset(torch.utils.data.Dataset):
             )
 
         self.speakers, self.waveforms, self.durations = self.load_jsonl(jsonl_path)
-        wav_mixs = self._generate_mixed_waveforms()
+        wav_mixs, self.speakers = self._generate_mixed_waveforms()
         padder = Padder2d(maxlen=sr*slice_dur)
         self.wav_mixs = padder.transform(wav_mixs)
         self.wav_mixs = torch.from_numpy(self.wav_mixs)
@@ -50,17 +51,18 @@ class SpeechDataset(torch.utils.data.Dataset):
         return speakers, waveforms, durations
 
     def _generate_mixed_waveforms(self):
-        wav_mixs = []
-        for file_1, file_2 in tqdm(self.waveforms, total=len(self.waveforms)):
+        wav_mixs, speakers = [], []
+        for (file_1, file_2), (spk_1, spk_2) in tqdm(zip(self.waveforms, self.speakers), total=len(self.waveforms)):
             wav_1, _ = librosa.load(file_1, sr=self.sr)
             wav_2, _ = librosa.load(file_2, sr=self.sr)
             wav_1_dur, wav_2_dur = len(wav_1), len(wav_2)
-            if wav_1_dur < (self.sr * self.slice_dur):
-                wav_1 = np.pad(wav_1, (0, self.sr*self.slice_dur-wav_1_dur), 'constant', constant_values=(0, 0))
-                wav_1_dur = self.sr * self.slice_dur
 
             wav_2_power = np.mean(np.square(wav_1)) / (10**(self.snr/10))
             scale = np.sqrt(wav_2_power / np.mean(np.square(wav_2)))
+
+            if wav_1_dur < (self.sr * self.slice_dur):
+                wav_1 = np.pad(wav_1, (0, self.sr*self.slice_dur-wav_1_dur), 'constant', constant_values=(0, 0))
+                wav_1_dur = self.sr * self.slice_dur
 
             if wav_1_dur == wav_2_dur:
                 wav_mix = wav_1 + scale * wav_2
@@ -70,8 +72,18 @@ class SpeechDataset(torch.utils.data.Dataset):
             elif wav_1_dur < wav_2_dur:
                 wav_mix = wav_1 + scale * wav_2[:wav_1_dur]
 
+            # Data augmentation
+            if self.augmentation > 0:
+                assert isinstance(self.augmentation, int)
+                if len(wav_mix) > self.sr*self.slice_dur:
+                    for _ in range(self.augmentation):
+                        wav_mix_ = self.random_slice(wav_mix, self.slice_dur, self.sr)
+                        wav_mixs.append(wav_mix_)
+                        speakers.append([spk_1, spk_2])
+
             wav_mixs.append(wav_mix)
-        return wav_mixs
+            speakers.append([spk_1, spk_2])
+        return wav_mixs, speakers
 
     @staticmethod
     def random_slice(audio, slice_dur, sr):
