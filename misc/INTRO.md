@@ -12,6 +12,8 @@ Compute a faster SVD:
 1. Golub-Kahan Bidiagonalization algorithm
 2. Lawson-Hanson-Chan algorithm
 
+A detailed SVD explanation can be found [here](https://www2.math.ethz.ch/education/bachelor/lectures/hs2014/other/linalg_INFK/svdneu.pdf) and [here](https://mml-book.github.io/book/mml-book.pdf) on page 134.
+
 ## NoS (Number of Speakers) Estimation
 
 1. Window-Disjoint Orthogonal (WDO)
