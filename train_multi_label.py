@@ -167,7 +167,7 @@ def main():
         fp16=False, 
         callbacks=[tb]
     )
-    model.save(os.path.join(CHECKPOINTS_ROOT, f'svd-aug5-bs128.ckpt'), weights_only=False)
+    model.save(os.path.join(CHECKPOINTS_ROOT, f'svd-aug0-bs128-lr3-adamw-noam.ckpt'), weights_only=False)
 
 
 if __name__ == '__main__':
