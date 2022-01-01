@@ -7,7 +7,13 @@ warnings.filterwarnings('ignore')
 
 
 class RNNBlock(nn.Module):
+    """
+    RNN Block
 
+    References
+    ----------
+    1. https://www.itread01.com/content/1545852004.html
+    """
     def __init__(self, rnn_type, input_size, hidden_size, n_layers=1, dropout=0.1, bidirectional=False):
         """
         Parameters
