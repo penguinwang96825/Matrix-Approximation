@@ -1,4 +1,5 @@
 import os
+import argparse
 import torch
 import torch.nn as nn
 import numpy as np
@@ -92,7 +93,7 @@ class DecompositionNet(Module):
         targets = F.one_hot(speaker_1, num_classes=630) + F.one_hot(speaker_2, num_classes=630)
         loss = self.loss_fn(outputs, targets.float())
         m = self.monitor_metrics(outputs, targets)
-        return None, loss, m
+        return outputs, loss, m
 
     def monitor_metrics(self, outputs, targets):
         if targets is None:
@@ -117,6 +118,18 @@ def hamming_score(y_true, y_pred):
 
 
 def main():
+    args = argparse.ArgumentParser(
+        description="Preparing TIMIT dataset for training."
+    )
+    args.add_argument(
+        "-a",
+        "--augmentation",
+        default=0,
+        type=int,
+        help="Number of mixture",
+    )
+    args = args.parse_args()
+
     NUM_TO_DEMIX = 2
 
     TRAIN_JSONL_PATH = os.path.join(TIMIT_DATASET_ROOT, 'train-clean-2mix.jsonl')
@@ -126,7 +139,7 @@ def main():
         n_mfcc=CONFIG['n_mfcc'], 
         snr=CONFIG['snr'], 
         slice_dur=CONFIG['slice_dur'], 
-        augmentation=CONFIG['augmentation'], 
+        augmentation=args.augmentation, 
         mfcc_transform=True
     )
     train_ds, valid_ds = torch.utils.data.random_split(ds, [round(len(ds)*.8), round(len(ds)*.2)])
@@ -167,7 +180,7 @@ def main():
         fp16=False, 
         callbacks=[tb]
     )
-    model.save(os.path.join(CHECKPOINTS_ROOT, f'svd-aug0-bs128-lr3-adamw-noam.ckpt'), weights_only=False)
+    model.save(os.path.join(CHECKPOINTS_ROOT, f'svd-aug{args.augmentation}-bs128-lr3-adamw-noam.ckpt'), weights_only=False)
 
 
 if __name__ == '__main__':
