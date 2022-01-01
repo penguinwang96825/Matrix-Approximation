@@ -9,11 +9,10 @@ from demixing.callbacks import CallbackRunner
 
 
 class Module(nn.Module):
-
+    """
+    Inheriting from nn.Module
+    """
     def __init__(self, *args, **kwargs):
-        """
-        Instead of inheriting from nn.Module, you import ccsa and inherit from ccsa.Module
-        """
         super().__init__(*args, **kwargs)
         self.train_loader = None
         self.valid_loader = None
