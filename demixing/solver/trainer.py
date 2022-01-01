@@ -280,8 +280,7 @@ class Module(nn.Module):
         if self.training:
             self.eval()
 
-        else:
-            tk0 = tqdm(data_loader, total=len(data_loader))
+        tk0 = tqdm(data_loader, total=len(data_loader))
 
         for _, data in enumerate(tk0):
             with torch.no_grad():
