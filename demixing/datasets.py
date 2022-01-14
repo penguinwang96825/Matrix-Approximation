@@ -1,5 +1,5 @@
 import os
-import json
+import random
 import librosa
 import torch
 import torch.nn as nn
@@ -12,9 +12,16 @@ from demixing.operation import Padder2d
 
 class SpeechDataset(torch.utils.data.Dataset):
 
-    def __init__(self, jsonl_path, sr=16000, n_mfcc=20, snr=5, slice_dur=1, augmentation=0, mfcc_transform=True):
+    def __init__(self, waveforms, speakers, sr=16000, n_mfcc=20, snr=5, slice_dur=1, augmentation=0, mfcc_transform=True):
+        """
+        Parameters
+        ----------
+        waveforms: List[List[str, str]]
+        speakers: List[List[int, int]]
+        """
         self.sr = sr
         self.snr = snr
+        self.n_mfcc = n_mfcc
         self.slice_dur = slice_dur
         self.augmentation = augmentation
         self.mfcc_transform = mfcc_transform
@@ -33,22 +40,12 @@ class SpeechDataset(torch.utils.data.Dataset):
                 }
             )
 
-        self.speakers, self.waveforms, self.durations = self.load_jsonl(jsonl_path)
+        self.speakers, self.waveforms, = speakers, waveforms
         wav_mixs, self.speakers = self._generate_mixed_waveforms()
         padder = Padder2d(maxlen=sr*slice_dur)
         self.wav_mixs = padder.transform(wav_mixs)
         self.wav_mixs = torch.from_numpy(self.wav_mixs)
         self.speakers = torch.tensor(self.speakers)
-
-    def load_jsonl(self, jsonl_path):
-        speakers, waveforms, durations = [], [], []
-        with open(jsonl_path, 'r') as f:
-            for line in f:
-                observation = json.loads(line)
-                speakers.append(observation['speakers'])
-                waveforms.append(observation['waveforms'])
-                durations.append(observation['durations'])
-        return speakers, waveforms, durations
 
     def _generate_mixed_waveforms(self):
         wav_mixs, speakers = [], []
@@ -102,6 +99,12 @@ class SpeechDataset(torch.utils.data.Dataset):
         if self.mfcc_transform:
             # mfcc: [n_mfcc, time]
             mfcc = self.mfcc_layer(wav_mix)
+            mfcc = mfcc.unsqueeze(0)
+            if random.random() >= 0.5:
+                mfcc = freq_mask(mfcc, F=2, num_masks=2, replace_with_zero=True)
+            if random.random() >= 0.5:
+                mfcc = time_mask(mfcc, T=10, num_masks=2, replace_with_zero=True)
+            mfcc = mfcc.squeeze(0)
             return {
                 'mfcc': mfcc, 
                 'speaker_1': speaker_1, 
@@ -112,3 +115,38 @@ class SpeechDataset(torch.utils.data.Dataset):
             'speaker_1': speaker_1, 
             'speaker_2': speaker_2
         }
+
+
+def freq_mask(spec, F=30, num_masks=1, replace_with_zero=False):
+    cloned = spec.clone()
+    num_mel_channels = cloned.shape[1]
+    
+    for i in range(0, num_masks):        
+        f = random.randrange(0, F)
+        f_zero = random.randrange(0, num_mel_channels - f)
+
+        # avoids randrange error if values are equal and range is empty
+        if (f_zero == f_zero + f): return cloned
+
+        mask_end = random.randrange(f_zero, f_zero + f) 
+        if (replace_with_zero): cloned[0][f_zero:mask_end] = 0
+        else: cloned[0][f_zero:mask_end] = cloned.mean()
+    
+    return cloned
+
+
+def time_mask(spec, T=40, num_masks=1, replace_with_zero=False):
+    cloned = spec.clone()
+    len_spectro = cloned.shape[2]
+    
+    for i in range(0, num_masks):
+        t = random.randrange(0, T)
+        t_zero = random.randrange(0, len_spectro - t)
+
+        # avoids randrange error if values are equal and range is empty
+        if (t_zero == t_zero + t): return cloned
+
+        mask_end = random.randrange(t_zero, t_zero + t)
+        if (replace_with_zero): cloned[0][:,t_zero:mask_end] = 0
+        else: cloned[0][:,t_zero:mask_end] = cloned.mean()
+    return cloned
