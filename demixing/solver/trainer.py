@@ -159,14 +159,24 @@ class Module(nn.Module):
     def forward(self, *args, **kwargs):
         return super().forward(*args, **kwargs)
 
-    def model_fn(self, data):
-        for key, value in data.items():
-            data[key] = value.to(self.device)
+    def compute_objectives(self, output, *args, **kwargs):
+        return
+
+    def compute_metrics(self, output, *args, **kwargs):
+        return
+
+    def model_fn(self, batch):
+        for key, value in batch.items():
+            batch[key] = value.to(self.device)
         if self.fp16:
             with torch.cuda.amp.autocast():
-                output, loss, metrics = self(**data)
+                output = self(batch)
+                loss = self.compute_objectives(output, batch)
+                metrics = self.compute_metrics(output, batch)
         else:
-            output, loss, metrics = self(**data)
+            output = self(batch)
+            loss = self.compute_objectives(output, batch)
+            metrics = self.compute_metrics(output, batch)
         return output, loss, metrics
 
     def train_one_step(self, data):
